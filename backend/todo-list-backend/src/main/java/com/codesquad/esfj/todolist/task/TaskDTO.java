@@ -33,6 +33,18 @@ public class TaskDTO {
             );
         }
 
+        Set<String> resultKeys = result.keySet();
+
+        if(!resultKeys.contains("todo")) {
+            result.put("todo", Collections.emptyList());
+        }
+        if(!resultKeys.contains("done")) {
+            result.put("done", Collections.emptyList());
+        }
+        if(!resultKeys.contains("doing")) {
+            result.put("doing", Collections.emptyList());
+        }
+
         return result;
     }
 

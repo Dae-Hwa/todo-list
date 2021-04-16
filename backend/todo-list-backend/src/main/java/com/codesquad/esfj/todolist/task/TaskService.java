@@ -82,6 +82,8 @@ public class TaskService {
 
     @Transactional
     public void move(long id, String targetTaskType, long targetId) {
+        logger.debug("move start - id: {}, targetTaskType: {}, targetId: {}", id, targetTaskType, targetId);
+
         Task taskToMove = taskRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당하는 Task가 존재하지 않습니다." + id));
 
@@ -117,6 +119,19 @@ public class TaskService {
         setIsHeadTo(taskToMove.getPreviousId(), false)
                 .ifPresent(taskRepository::save);
 
+        Map<String, List<Task>> results = taskRepository.findAllByDeletedFalse().stream()
+                .collect(Collectors.groupingBy(Task::getTaskType));
+
+        for (List<Task> resultTasks : results.values()) {
+            if(resultTasks.stream().filter(Task::isHead).count() != 1) {
+                throw new IllegalStateException("비정상적 이동 발생(헤더이상) : id : " + id + ", targetType : " + targetTaskType + ", targetId : " + targetId);
+            }
+            if(resultTasks.stream().filter(task -> task.getPreviousId().equals(Task.TOP_PREVIOUS_ID)).count() != 1) {
+                throw new IllegalStateException("비정상적 이동 발생(TOP이상) : id : " + id + ", targetType : " + targetTaskType + ", targetId : " + targetId);
+            }
+        }
+
+        logger.debug("move end\ntaskToMove: {}\noriginalNextTask: {}\nnewNextTask: {}", taskToMove, originalNextTask, newNextTask);
     }
 
     private Optional<Task> setIsHeadTo(long targetId, boolean isHead) {
